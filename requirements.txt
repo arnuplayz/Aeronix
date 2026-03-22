@@ -3,6 +3,3 @@ flask
 flask-cors
 requests
 gunicorn
-edge-tts
-playsound
-SpeechRecognition
