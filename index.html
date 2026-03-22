@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aeronix v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<!-- Syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+:root{
+  --c:#00f0ff;--cg:rgba(0,240,255,0.45);
+  --bg:#060a0f;--panel:rgba(0,14,24,0.95);
+  --bdr:rgba(0,240,255,0.2);--text:#c0f0ff;
+  --red:#ff3a6e;--grn:#00ff88;--gold:#ffd700;
+  --purple:#9b59ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999;}
+#cv-grid,#cv-pts{position:fixed;inset:0;pointer-events:none;}
+#cv-grid{z-index:0;opacity:0.22;}#cv-pts{z-index:1;}
+.corner{position:fixed;width:48px;height:48px;z-index:200;}
+.corner::before,.corner::after{content:'';position:absolute;background:var(--c);box-shadow:0 0 10px var(--c);}
+.corner::before{width:100%;height:2px;top:0;left:0;}.corner::after{width:2px;height:100%;top:0;left:0;}
+.corner.tl{top:12px;left:12px;}.corner.tr{top:12px;right:12px;transform:scaleX(-1);}
+.corner.bl{bottom:12px;left:12px;transform:scaleY(-1);}.corner.br{bottom:12px;right:12px;transform:scale(-1);}
+#app{position:relative;z-index:10;width:900px;max-width:98vw;display:flex;flex-direction:column;height:100vh;padding:8px 0 6px;}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:center;gap:22px;padding:2px 0 3px;}
+.hud{display:flex;flex-direction:column;gap:4px;min-width:130px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1.5px;color:rgba(0,240,255,0.38);}
+.hud.right{align-items:flex-end;}
+.hud-row{display:flex;align-items:center;gap:5px;}
+.hud.right .hud-row{flex-direction:row-reverse;}
+.led{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.led.c{background:var(--c);box-shadow:0 0 5px var(--c);animation:blink 2.2s infinite;}
+.led.g{background:var(--grn);box-shadow:0 0 5px var(--grn);animation:blink 1.8s .4s infinite;}
+.led.r{background:var(--red);box-shadow:0 0 5px var(--red);animation:blink 1.4s .8s infinite;}
+.led.gold{background:var(--gold);box-shadow:0 0 5px var(--gold);animation:blink 2.5s .6s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.1}}
+.title-block{text-align:center;}
+h1{font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;letter-spacing:10px;color:var(--c);user-select:none;white-space:nowrap;text-shadow:0 0 10px var(--c),0 0 30px var(--cg);animation:hpulse 3s ease-in-out infinite alternate;}
+@keyframes hpulse{from{text-shadow:0 0 10px var(--c),0 0 28px var(--cg);}to{text-shadow:0 0 18px var(--c),0 0 55px var(--cg),0 0 90px rgba(0,240,255,0.08);}}
+.vtag{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--gold);letter-spacing:2px;margin-top:1px;text-shadow:0 0 5px var(--gold);}
+
+/* STATUS BAR */
+.sbar{display:flex;justify-content:space-between;align-items:center;padding:3px 14px;margin:3px 0;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);font-size:8px;letter-spacing:2px;color:rgba(0,240,255,0.3);font-family:'Share Tech Mono',monospace;background:rgba(0,240,255,0.015);}
+.sbar .on{color:var(--grn);text-shadow:0 0 4px var(--grn);}
+.sbar #cur-mode{color:var(--gold);letter-spacing:3px;text-shadow:0 0 4px var(--gold);}
+
+/* MODE BADGES */
+#mode-bar{display:flex;gap:5px;padding:2px 0;justify-content:center;flex-wrap:wrap;}
+.mbadge{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;padding:2px 9px;border-radius:2px;border:1px solid rgba(0,240,255,0.15);color:rgba(0,240,255,0.28);cursor:default;transition:all .2s;user-select:none;}
+.mbadge.active{color:var(--c);border-color:var(--c);background:rgba(0,240,255,0.05);}
+.mbadge.gaming.active{color:var(--red);border-color:var(--red);background:rgba(255,58,110,0.05);}
+.mbadge.video.active{color:var(--gold);border-color:var(--gold);background:rgba(255,215,0,0.05);}
+.mbadge.science.active{color:var(--grn);border-color:var(--grn);background:rgba(0,255,136,0.05);}
+.mbadge.code.active{color:var(--purple);border-color:var(--purple);background:rgba(155,89,255,0.05);}
+.mbadge.image.active{color:var(--gold);border-color:var(--gold);background:rgba(255,215,0,0.05);}
+
+/* CHAT */
+#chat-wrap{flex:1;min-height:0;margin-bottom:3px;border:1px solid var(--bdr);border-radius:2px;background:var(--panel);position:relative;overflow:hidden;}
+#chat-wrap::before,#chat-wrap::after{content:'';position:absolute;width:14px;height:14px;border-color:var(--c);border-style:solid;z-index:2;opacity:0.35;}
+#chat-wrap::before{top:0;left:0;border-width:2px 0 0 2px;}#chat-wrap::after{bottom:0;right:0;border-width:0 2px 2px 0;}
+#chat-label{font-size:7.5px;letter-spacing:3px;color:rgba(0,240,255,0.25);padding:4px 12px 2px;border-bottom:1px solid rgba(0,240,255,0.06);display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;}
+#chat{height:calc(100% - 22px);overflow-y:auto;padding:12px 14px 6px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;}
+#chat::-webkit-scrollbar{width:3px;}#chat::-webkit-scrollbar-thumb{background:rgba(0,240,255,0.16);border-radius:2px;}
+
+/* MESSAGES */
+.msg{max-width:76%;padding:9px 14px;border-radius:2px;font-size:14px;line-height:1.65;position:relative;margin-top:14px;animation:msgIn .18s ease-out;word-break:break-word;}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.user{background:linear-gradient(135deg,rgba(0,240,255,0.12),rgba(0,150,255,0.06));border:1px solid rgba(0,240,255,0.3);color:#e0f8ff;margin-left:auto;border-top-right-radius:0;}
+.user::before{content:'YOU';position:absolute;top:-13px;right:0;font-size:7px;letter-spacing:2px;color:rgba(0,240,255,0.25);font-family:'Share Tech Mono',monospace;}
+.ai{background:rgba(0,10,20,0.9);border:1px solid rgba(0,240,255,0.12);color:#aaeeff;margin-right:auto;border-top-left-radius:0;}
+.ai::before{content:'AERONIX';position:absolute;top:-13px;left:0;font-size:7px;letter-spacing:2px;color:rgba(0,240,255,0.25);font-family:'Share Tech Mono',monospace;}
+
+/* CODE BLOCKS in messages */
+.ai pre{margin:8px 0;border-radius:4px;overflow:hidden;border:1px solid rgba(0,240,255,0.15);}
+.ai pre code{font-family:'Share Tech Mono',monospace;font-size:12px;padding:12px !important;display:block;line-height:1.5;}
+.ai code:not(pre code){font-family:'Share Tech Mono',monospace;font-size:12px;background:rgba(0,240,255,0.08);padding:1px 5px;border-radius:2px;color:#00f0ff;}
+
+/* Code copy button */
+.code-wrap{position:relative;}
+.copy-btn{position:absolute;top:6px;right:6px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border:1px solid rgba(0,240,255,0.3);border-radius:2px;background:rgba(0,240,255,0.07);color:var(--c);cursor:pointer;transition:all .15s;z-index:1;}
+.copy-btn:hover{background:rgba(0,240,255,0.15);}
+
+/* Generated image */
+.gen-img{max-width:100%;border-radius:3px;margin-top:8px;border:1px solid rgba(0,240,255,0.2);display:block;cursor:pointer;transition:transform .2s;}
+.gen-img:hover{transform:scale(1.01);}
+.img-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.img-btn{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 9px;border:1px solid rgba(0,240,255,0.25);border-radius:2px;background:rgba(0,240,255,0.04);color:var(--c);cursor:pointer;transition:all .15s;}
+.img-btn:hover{background:rgba(0,240,255,0.1);border-color:var(--c);}
+
+/* TYPING */
+.typing-wrap{margin-right:auto;margin-top:14px;background:rgba(0,10,20,0.9);border:1px solid rgba(0,240,255,0.1);border-radius:2px;border-top-left-radius:0;padding:9px 16px;}
+.tdots{display:flex;gap:5px;align-items:center;}
+.tdot{width:6px;height:6px;background:var(--c);border-radius:50%;box-shadow:0 0 4px var(--c);animation:tda 1.2s infinite;}
+.tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
+@keyframes tda{0%,80%,100%{transform:scale(0.3);opacity:0.3}40%{transform:scale(1);opacity:1}}
+
+/* VOICE BOX */
+#voice-box{height:42px;border:1px solid var(--bdr);border-radius:2px;background:rgba(0,5,14,0.94);position:relative;overflow:hidden;margin-bottom:3px;}
+#voice-box::before,#voice-box::after{content:'';position:absolute;width:10px;height:10px;border-color:rgba(0,240,255,0.25);border-style:solid;z-index:2;}
+#voice-box::before{top:0;left:0;border-width:1px 0 0 1px;}#voice-box::after{bottom:0;right:0;border-width:0 1px 1px 0;}
+#vb-label{font-size:7px;letter-spacing:2px;color:rgba(0,240,255,0.2);position:absolute;left:9px;top:3px;z-index:3;font-family:'Share Tech Mono',monospace;}
+#vb-status{font-size:7px;letter-spacing:2px;position:absolute;right:9px;top:3px;z-index:3;color:rgba(0,240,255,0.16);transition:color .3s;font-family:'Share Tech Mono',monospace;}
+#vb-status.active{color:var(--c);text-shadow:0 0 5px var(--c);}
+#cv-wave{width:100%;height:100%;display:block;}
+
+/* DRAG DROP */
+#drop-overlay{display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,8,18,0.9);border:3px dashed var(--c);flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;}
+#drop-overlay.show{display:flex;}
+#drop-overlay .drop-ico{font-size:56px;color:var(--c);text-shadow:0 0 22px var(--c);animation:dpulse .8s ease-in-out infinite alternate;}
+#drop-overlay .drop-txt{font-family:'Orbitron',sans-serif;font-size:18px;letter-spacing:6px;color:var(--c);text-shadow:0 0 12px var(--c);}
+@keyframes dpulse{from{transform:scale(1);}to{transform:scale(1.1);}}
+
+/* ATTACH */
+#attach-strip{display:none;align-items:center;gap:8px;padding:4px 8px;margin-bottom:3px;border:1px solid rgba(0,240,255,0.15);border-radius:2px;background:rgba(0,240,255,0.02);font-size:11px;color:rgba(0,240,255,0.5);font-family:'Share Tech Mono',monospace;}
+#attach-strip.visible{display:flex;}
+#attach-thumb{width:30px;height:30px;object-fit:cover;border-radius:2px;border:1px solid rgba(0,240,255,0.2);}
+#attach-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#attach-clear{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 3px;opacity:0.7;}
+#attach-clear:hover{opacity:1;}
+
+/* INPUT */
+#input-row{display:flex;align-items:center;gap:7px;}
+#input-wrap{flex:1;position:relative;display:flex;align-items:center;}
+#input-wrap::before{content:'›';position:absolute;left:11px;font-size:16px;color:rgba(0,240,255,0.28);pointer-events:none;z-index:1;font-family:'Share Tech Mono',monospace;}
+input#inp{width:100%;padding:10px 10px 10px 25px;background:rgba(0,7,17,0.98);border:1px solid rgba(0,240,255,0.22);border-radius:2px;color:var(--c);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;outline:none;transition:border-color .2s,box-shadow .2s;}
+input#inp::placeholder{color:rgba(0,240,255,0.12);}
+input#inp:focus{border-color:var(--c);box-shadow:0 0 10px rgba(0,240,255,0.1);}
+.icobtn{width:40px;height:40px;border-radius:2px;flex-shrink:0;border:1px solid rgba(0,240,255,0.2);background:rgba(0,240,255,0.03);color:var(--c);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.icobtn:hover{border-color:var(--c);background:rgba(0,240,255,0.08);box-shadow:0 0 10px rgba(0,240,255,0.15);}
+.icobtn:active{transform:scale(0.91);}
+#file-input{display:none;}
+
+/* MIC PILL */
+#mic-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;}
+#btn-mic{width:56px;height:26px;border-radius:13px;border:2px solid rgba(0,240,255,0.22);background:rgba(0,5,15,0.97);cursor:pointer;position:relative;padding:0;display:block;-webkit-appearance:none;appearance:none;transition:border-color .28s,box-shadow .28s;}
+#mic-knob{position:absolute;top:2px;left:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,240,255,0.35);box-shadow:0 0 6px rgba(0,240,255,0.3);transition:left .28s cubic-bezier(.4,0,.2,1),background .28s,box-shadow .28s;pointer-events:none;display:flex;align-items:center;justify-content:center;}
+#mic-knob svg{width:9px;height:9px;stroke:rgba(0,240,255,0.8);transition:stroke .28s;}
+#btn-mic.on{border-color:var(--red);box-shadow:0 0 10px rgba(255,58,110,0.4);animation:ppulse 1.4s ease-in-out infinite;}
+#btn-mic.on #mic-knob{left:29px;background:var(--red);box-shadow:0 0 8px rgba(255,58,110,0.85);}
+#btn-mic.on #mic-knob svg{stroke:#fff;}
+@keyframes ppulse{0%,100%{box-shadow:0 0 7px rgba(255,58,110,0.3);}50%{box-shadow:0 0 16px rgba(255,58,110,0.6);}}
+#mic-lbl{font-size:7px;letter-spacing:2px;font-family:'Share Tech Mono',monospace;color:rgba(0,240,255,0.2);transition:color .28s;user-select:none;}
+#mic-lbl.on{color:var(--red);text-shadow:0 0 4px rgba(255,58,110,0.5);}
+
+footer{font-size:7px;letter-spacing:3px;color:rgba(0,240,255,0.1);text-align:center;padding-top:3px;font-family:'Share Tech Mono',monospace;}
+</style>
+</head>
+<body>
+<div id="drop-overlay"><div class="drop-ico">⬇</div><div class="drop-txt">DROP TO ANALYZE</div></div>
+<div class="corner tl"></div><div class="corner tr"></div>
+<div class="corner bl"></div><div class="corner br"></div>
+<canvas id="cv-grid"></canvas><canvas id="cv-pts"></canvas>
+
+<div id="app">
+  <header>
+    <div class="hud">
+      <div class="hud-row"><span class="led c"></span>SYS ONLINE</div>
+      <div class="hud-row"><span class="led g"></span>GROQ READY</div>
+      <div class="hud-row"><span class="led gold"></span>IMG ENGINE</div>
+    </div>
+    <div class="title-block">
+      <h1>AERONIX</h1>
+      <div class="vtag">V5 · GAMING · VIDEO · SCIENCE · CODE · IMAGE</div>
+    </div>
+    <div class="hud right">
+      <div class="hud-row">MIC READY<span class="led c"></span></div>
+      <div class="hud-row">MEM SYNC<span class="led g"></span></div>
+      <div class="hud-row">DRAG DROP<span class="led r"></span></div>
+    </div>
+  </header>
+
+  <div class="sbar">
+    <span>SESSION // <span id="sid">---</span></span>
+    <span class="on">● CONNECTED</span>
+    <span id="cur-mode">STANDBY</span>
+    <span id="clk">--:--:--</span>
+  </div>
+
+  <div id="mode-bar">
+    <span class="mbadge" id="b-general">GENERAL</span>
+    <span class="mbadge gaming" id="b-gaming">⚔ GAMING</span>
+    <span class="mbadge video" id="b-video">🎬 VIDEO</span>
+    <span class="mbadge science" id="b-science">⚗ SCIENCE</span>
+    <span class="mbadge code" id="b-code">⌨ CODE</span>
+    <span class="mbadge image" id="b-image">✦ IMAGE</span>
+  </div>
+
+  <div id="chat-wrap">
+    <div id="chat-label"><span>// TRANSMISSION LOG</span><span id="msg-count">1 MSG</span></div>
+    <div id="chat">
+      <div class="msg ai">Aeronix v5 online. Ask anything · write code · generate images · "open [app]" · drag files here.</div>
+    </div>
+  </div>
+
+  <div id="voice-box">
+    <span id="vb-label">// VOICE CHANNEL</span>
+    <span id="vb-status">STANDBY</span>
+    <canvas id="cv-wave"></canvas>
+  </div>
+
+  <div id="attach-strip">
+    <img id="attach-thumb" src="" alt="" style="display:none;">
+    <span id="attach-name"></span>
+    <button id="attach-clear">✕</button>
+  </div>
+
+  <div id="input-row">
+    <div id="input-wrap">
+      <input id="inp" type="text" placeholder='Ask · "make image of dog" · "write python snake game" · "open discord"...' autocomplete="off">
+    </div>
+    <button class="icobtn" id="btn-upload" title="Upload file/image">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+    </button>
+    <input type="file" id="file-input" accept="image/*,.pdf,.txt,.md,.py,.js,.ts,.html,.css,.json,.csv,.cpp,.c,.java,.go,.rs">
+    <button class="icobtn" id="btn-send" title="Send">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+    <div id="mic-wrap">
+      <button id="btn-mic">
+        <div id="mic-knob">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"></rect>
+            <path d="M5 10a7 7 0 0 0 14 0"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+            <line x1="8" y1="22" x2="16" y2="22"></line>
+          </svg>
+        </div>
+      </button>
+      <span id="mic-lbl">MIC OFF</span>
+    </div>
+  </div>
+  <footer>AERONIX v5 · GROQ LLaMA 3.3 · FLUX.1 IMAGE GEN · GAMING · VIDEO PROMPTS · SCIENCE · CODE</footer>
+</div>
+
+<script>
+// ── INIT ──
+document.getElementById('sid').textContent = Math.random().toString(36).slice(2,8).toUpperCase();
+(function tick(){ document.getElementById('clk').textContent = new Date().toLocaleTimeString('en-US',{hour12:false}); setTimeout(tick,1000); })();
+
+// ── GRID ──
+(function(){
+  const cv=document.getElementById('cv-grid'),cx=cv.getContext('2d');
+  function draw(){
+    cv.width=innerWidth;cv.height=innerHeight;
+    cx.strokeStyle='rgba(0,240,255,0.08)';cx.lineWidth=0.5;const s=44;
+    for(let x=0;x<=cv.width;x+=s){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,cv.height);cx.stroke();}
+    for(let y=0;y<=cv.height;y+=s){cx.beginPath();cx.moveTo(0,y);cx.lineTo(cv.width,y);cx.stroke();}
+    const g=cx.createRadialGradient(cv.width/2,cv.height*.65,0,cv.width/2,cv.height*.65,cv.width*.5);
+    g.addColorStop(0,'rgba(0,240,255,0.035)');g.addColorStop(1,'transparent');
+    cx.fillStyle=g;cx.fillRect(0,0,cv.width,cv.height);
+  }
+  window.addEventListener('resize',draw);draw();
+})();
+
+// ── PARTICLES ──
+(function(){
+  const cv=document.getElementById('cv-pts'),cx=cv.getContext('2d');
+  function sz(){cv.width=innerWidth;cv.height=innerHeight;}sz();
+  window.addEventListener('resize',sz);
+  const pts=Array.from({length:30},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.1+0.2,vx:(Math.random()-.5)*.18,vy:-Math.random()*.24-.04,ph:Math.random()*Math.PI*2}));
+  (function loop(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.ph+=0.01;if(p.y<-4){p.y=cv.height+4;p.x=Math.random()*cv.width;}const a=(Math.sin(p.ph)*.5+.5)*.38;cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fillStyle=`rgba(0,240,255,${a})`;cx.shadowColor='#00f0ff';cx.shadowBlur=4;cx.fill();});
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// ── WAVE ──
+const wCV=document.getElementById('cv-wave'),wCX=wCV.getContext('2d');
+let waveOn=false,wAmp=0,wPhase=0;
+function resizeWave(){wCV.width=wCV.offsetWidth;wCV.height=wCV.offsetHeight;}
+window.addEventListener('resize',resizeWave);resizeWave();
+(function drawWave(){
+  requestAnimationFrame(drawWave);
+  const W=wCV.width,H=wCV.height;wCX.clearRect(0,0,W,H);
+  wAmp+=((waveOn?1:0)-wAmp)*0.06;const amp=(H/2-3)*wAmp,mid=H/2;
+  wCX.beginPath();wCX.moveTo(0,mid);
+  for(let x=0;x<W;x++){const t=x/W;wCX.lineTo(x,mid+Math.sin(t*Math.PI*8+wPhase)*amp*.52+Math.sin(t*Math.PI*15+wPhase*1.8)*amp*.28+Math.sin(t*Math.PI*23+wPhase*2.5)*amp*.15+Math.sin(t*Math.PI*37+wPhase*3.1)*amp*.05);}
+  const gr=wCX.createLinearGradient(0,0,W,0);const a=wAmp*.8+0.13;
+  gr.addColorStop(0,'rgba(0,240,255,0)');gr.addColorStop(0.08,`rgba(0,240,255,${a})`);gr.addColorStop(0.5,`rgba(0,200,255,${Math.min(a*1.1,1)})`);gr.addColorStop(0.92,`rgba(0,240,255,${a})`);gr.addColorStop(1,'rgba(0,240,255,0)');
+  wCX.strokeStyle=gr;wCX.lineWidth=waveOn?2:1;wCX.shadowColor='#00f0ff';wCX.shadowBlur=waveOn?10:2;wCX.stroke();
+  if(waveOn)wPhase+=0.09;
+})();
+function setWave(v){waveOn=v;const s=document.getElementById('vb-status');s.textContent=v?'◉ PROCESSING':'STANDBY';s.classList.toggle('active',v);}
+
+// ── MODE DETECTION ──
+const MODE_MAP = {
+  gaming:['tactic','strategy','build','loadout','meta','ranked','esport','fps','moba','boss','loot','game','weapon','respawn','rotation','callout'],
+  video:['prompt for','veo','runway','sora','kling','pika','luma','firefly','hailuo','video prompt','cinematic'],
+  science:['theorem','equation','integral','derivative','quantum','formula','proof','atom','force','velocity','entropy','calculus','biology','chemistry','physics','doubt','explain how','what is'],
+  code:['write code','write a','create a script','build me','code for','python','javascript','html','css','react','flask','function','algorithm','program','script','write me a'],
+  image:['generate','create','make','draw','render','show me','image','photo','picture','dog','cat','landscape','person','anime','robot','dragon','fantasy','portrait','wallpaper'],
+};
+
+function detectModeUI(text){
+  const t=text.toLowerCase();
+  for(const [mode,keys] of Object.entries(MODE_MAP)){
+    if(keys.some(k=>t.includes(k))) return mode;
+  }
+  return 'general';
+}
+
+function setMode(mode){
+  document.querySelectorAll('.mbadge').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('b-'+mode);
+  if(el)el.classList.add('active');
+  const labels={general:'GENERAL',gaming:'⚔ GAMING',video:'🎬 VIDEO',science:'⚗ SCIENCE',code:'⌨ CODE',image:'✦ IMAGE'};
+  document.getElementById('cur-mode').textContent=labels[mode]||mode.toUpperCase();
+}
+
+// ── MARKDOWN → HTML RENDERER ──
+// Renders code blocks with syntax highlighting, bold, inline code
+function renderMarkdown(text){
+  const div=document.createElement('div');
+
+  // Split on code blocks
+  const parts=text.split(/(```[\s\S]*?```)/g);
+  parts.forEach(part=>{
+    if(part.startsWith('```')){
+      // Extract language and code
+      const lines=part.slice(3,-3).split('\n');
+      const lang=lines[0].trim();
+      const code=lines.slice(1).join('\n');
+      const wrap=document.createElement('div');
+      wrap.className='code-wrap';
+      const pre=document.createElement('pre');
+      const codeEl=document.createElement('code');
+      codeEl.className=lang?`language-${lang}`:'';
+      codeEl.textContent=code;
+      pre.appendChild(codeEl);
+      // Copy button
+      const copyBtn=document.createElement('button');
+      copyBtn.className='copy-btn';
+      copyBtn.textContent='COPY';
+      copyBtn.onclick=()=>{
+        navigator.clipboard.writeText(code).then(()=>{
+          copyBtn.textContent='COPIED!';
+          setTimeout(()=>copyBtn.textContent='COPY',1500);
+        });
+      };
+      wrap.appendChild(pre);
+      wrap.appendChild(copyBtn);
+      div.appendChild(wrap);
+      // Highlight
+      hljs.highlightElement(codeEl);
+    } else {
+      // Render inline markdown
+      let html=part
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/`([^`]+)`/g,'<code>$1</code>')
+        .replace(/\n/g,'<br>');
+      const span=document.createElement('span');
+      span.innerHTML=html;
+      div.appendChild(span);
+    }
+  });
+  return div;
+}
+
+// ── MESSAGES ──
+let msgCount=1;
+function upCount(){document.getElementById('msg-count').textContent=msgCount+' MSG';}
+
+function addMessage(text,type,imgB64){
+  const d=document.createElement('div');d.className='msg '+type;
+  if(type==='ai'&&!imgB64){
+    d.appendChild(renderMarkdown(text));
+  } else {
+    d.innerText=text;
+  }
+  if(imgB64){
+    const img=document.createElement('img');
+    img.src='data:image/png;base64,'+imgB64;
+    img.className='gen-img';
+    img.onclick=()=>window.open(img.src,'_blank');
+    d.appendChild(img);
+    const acts=document.createElement('div');acts.className='img-actions';
+    const dl=document.createElement('button');dl.className='img-btn';dl.textContent='⬇ DOWNLOAD';
+    dl.onclick=()=>{const a=document.createElement('a');a.href=img.src;a.download='aeronix_img.png';a.click();};
+    const up2=document.createElement('button');up2.className='img-btn';up2.textContent='⬆ UPSCALE 2x';
+    up2.onclick=()=>doUpscale(imgB64,2);
+    const up4=document.createElement('button');up4.className='img-btn';up4.textContent='⬆ UPSCALE 4x';
+    up4.onclick=()=>doUpscale(imgB64,4);
+    acts.appendChild(dl);acts.appendChild(up2);acts.appendChild(up4);
+    d.appendChild(acts);
+  }
+  const chat=document.getElementById('chat');chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+  msgCount++;upCount();
+  return d;
+}
+
+function showTyping(){const w=document.createElement('div');w.className='typing-wrap';w.id='typing';w.innerHTML="<div class='tdots'><div class='tdot'></div><div class='tdot'></div><div class='tdot'></div></div>";const chat=document.getElementById('chat');chat.appendChild(w);chat.scrollTop=chat.scrollHeight;}
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+
+function doUpscale(b64,scale){
+  addMessage(`Upscaling ${scale}x...`,'ai');
+  fetch('/upscale-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,scale})})
+  .then(r=>r.json()).then(d=>{
+    if(d.image)addMessage(`Upscaled to ${d.width}×${d.height}px`,'ai',d.image);
+    else addMessage('Upscale failed: '+d.error,'ai');
+  });
+}
+
+// ── ATTACHMENT ──
+let attImg=null,attText=null,attName=null,attSrc=null;
+function clearAtt(){attImg=null;attText=null;attName=null;attSrc=null;document.getElementById('attach-strip').classList.remove('visible');document.getElementById('attach-thumb').style.display='none';document.getElementById('file-input').value='';}
+
+function processFile(file){
+  const form=new FormData();form.append('file',file);
+  fetch('/upload',{method:'POST',body:form}).then(r=>r.json()).then(data=>{
+    attName=data.name;
+    const strip=document.getElementById('attach-strip');
+    const thumb=document.getElementById('attach-thumb');
+    document.getElementById('attach-name').textContent=data.name;
+    if(data.type==='image'){attImg=data.data;attSrc='data:image/jpeg;base64,'+data.data;thumb.src=attSrc;thumb.style.display='block';}
+    else{attText=data.data;thumb.style.display='none';}
+    strip.classList.add('visible');
+    addMessage(`📎 ${data.name} attached. Ask me anything about it, or just send to analyze.`,'ai');
+  }).catch(()=>addMessage('Upload failed.','ai'));
+}
+
+document.getElementById('btn-upload').addEventListener('click',()=>document.getElementById('file-input').click());
+document.getElementById('attach-clear').addEventListener('click',clearAtt);
+document.getElementById('file-input').addEventListener('change',function(){if(this.files[0])processFile(this.files[0]);});
+
+// ── DRAG & DROP ──
+const overlay=document.getElementById('drop-overlay');
+let dragCnt=0;
+document.addEventListener('dragenter',e=>{e.preventDefault();dragCnt++;overlay.classList.add('show');});
+document.addEventListener('dragleave',e=>{e.preventDefault();dragCnt--;if(dragCnt<=0){dragCnt=0;overlay.classList.remove('show');}});
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();dragCnt=0;overlay.classList.remove('show');const f=e.dataTransfer.files[0];if(f)processFile(f);});
+
+// ── SEND ──
+function send(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();
+  if(!text&&!attImg&&!attText)return;
+
+  const mode=detectModeUI(text);
+  setMode(mode);
+
+  if(attSrc) addMessage(text||'Analyze this.','user');
+  else if(attName) addMessage((text||'Analyze.')+'\n📎 '+attName,'user');
+  else addMessage(text,'user');
+
+  inp.value='';showTyping();setWave(true);
+
+  const payload={message:text};
+  if(attImg)payload.image=attImg;
+  if(attText)payload.file_text=attText;
+  clearAtt();
+
+  let aiDiv=null;
+  let rawText='';
+  let genImg=null;
+
+  fetch('/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(res=>{
+    removeTyping();
+    // Create AI bubble with streaming content
+    aiDiv=document.createElement('div');aiDiv.className='msg ai';aiDiv.style.marginTop='14px';
+    const chat=document.getElementById('chat');chat.appendChild(aiDiv);chat.scrollTop=chat.scrollHeight;
+    msgCount++;upCount();
+
+    const reader=res.body.getReader(),decoder=new TextDecoder();let buf='';
+    function pump(){
+      reader.read().then(({done,value})=>{
+        if(done){
+          setWave(false);
+          // Final render with markdown
+          if(rawText&&!genImg){
+            aiDiv.innerHTML='';
+            aiDiv.appendChild(renderMarkdown(rawText));
+          }
+          if(genImg){
+            // Render image in existing bubble
+            const img=document.createElement('img');
+            img.src='data:image/png;base64,'+genImg;
+            img.className='gen-img';img.onclick=()=>window.open(img.src,'_blank');
+            aiDiv.appendChild(img);
+            const acts=document.createElement('div');acts.className='img-actions';
+            const dl=document.createElement('button');dl.className='img-btn';dl.textContent='⬇ DOWNLOAD';
+            dl.onclick=()=>{const a=document.createElement('a');a.href=img.src;a.download='aeronix_img.png';a.click();};
+            const up2=document.createElement('button');up2.className='img-btn';up2.textContent='⬆ 2x';up2.onclick=()=>doUpscale(genImg,2);
+            const up4=document.createElement('button');up4.className='img-btn';up4.textContent='⬆ 4x';up4.onclick=()=>doUpscale(genImg,4);
+            acts.appendChild(dl);acts.appendChild(up2);acts.appendChild(up4);
+            aiDiv.appendChild(acts);
+          }
+          return;
+        }
+        buf+=decoder.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop();
+        lines.forEach(line=>{
+          if(!line.startsWith('data: '))return;
+          try{
+            const obj=JSON.parse(line.slice(6));
+            if(obj.image) genImg=obj.image;
+            if(obj.token){
+              rawText+=obj.token;
+              // Stream as plain text while generating, render markdown at end
+              aiDiv.innerText=rawText;
+              document.getElementById('chat').scrollTop=9999;
+            }
+            if(obj.done) setWave(false);
+          }catch(e){}
+        });
+        pump();
+      });
+    }
+    pump();
+  })
+  .catch(()=>{removeTyping();setWave(false);addMessage('Connection error. Is Aeronix running on port 5000?','ai');});
+}
+
+document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
+document.getElementById('btn-send').addEventListener('click',send);
+
+// ── AUDIO CLICKS ──
+let _ax=null;
+function playClick(on){
+  try{
+    if(!_ax)_ax=new(window.AudioContext||window.webkitAudioContext)();
+    const o=_ax.createOscillator(),g=_ax.createGain();
+    o.connect(g);g.connect(_ax.destination);o.type='sine';const t=_ax.currentTime;
+    o.frequency.setValueAtTime(on?380:860,t);o.frequency.exponentialRampToValueAtTime(on?860:280,t+0.09);
+    g.gain.setValueAtTime(0.11,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    o.start(t);o.stop(t+0.14);
+  }catch(e){}
+}
+
+// ── MIC PILL ──
+const btnMic=document.getElementById('btn-mic'),micLbl=document.getElementById('mic-lbl');
+let micOn=false,recObj=null;
+function setMic(v){micOn=v;btnMic.classList.toggle('on',v);micLbl.classList.toggle('on',v);micLbl.textContent=v?'MIC ON':'MIC OFF';if(!v)recObj=null;playClick(v);}
+btnMic.addEventListener('click',()=>{
+  if(micOn){if(recObj)try{recObj.stop();}catch(e){}setMic(false);return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){addMessage('Speech recognition needs Chrome or Edge.','ai');return;}
+  const rec=new SR();rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=1;rec.lang='en-US';recObj=rec;
+  rec.onstart=()=>setMic(true);
+  rec.onresult=e=>{document.getElementById('inp').value=e.results[0][0].transcript;setMic(false);send();};
+  rec.onerror=e=>{console.error(e.error);setMic(false);if(e.error==='not-allowed')addMessage('Mic access denied. Allow in Chrome settings.','ai');};
+  rec.onend=()=>{if(micOn)setMic(false);};
+  try{rec.start();}catch(e){console.error(e);setMic(false);}
+});
+</script>
+</body>
+</html>
